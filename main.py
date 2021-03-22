@@ -210,7 +210,7 @@ async def sell(ctx, index: int):
             client.worksheet.update("H" + str(index+2), outgoingTrack)
 
             #channel message
-            embed = discord.Embed(colour=discord.Colour(0x4ef542), title=f"⏱️ Item Pending Sold", description="You will be notified when your item has been shipped out", timestamp=datetime.datetime.utcnow())
+            embed = discord.Embed(colour=discord.Colour(0x4ef542), title=f"⏱️ Item Pending Shipment", description="You will be notified when your item has been shipped out", timestamp=datetime.datetime.utcnow())
             embed.add_field(name="Item:", value=f"{item} ({size})")
             embed.add_field(name="Incoming Tracking:", value=tracking, inline=False)
             embed.add_field(name="Outgoing Tracking:", value=outgoingTrack, inline=False)
