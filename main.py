@@ -1,7 +1,7 @@
 from discord.ext import commands
 from discord.utils import get
 from discord import Game
-import discord, gspread, datetime, os, json, cv2, pdf2image, pyzbar, sys
+import discord, gspread, datetime, os, json, cv2, pdf2image, pyzbar, sys, uuid
 from pyzbar import pyzbar
 
 #extract variables from setting file
@@ -84,7 +84,7 @@ async def on_message(message):
 @client.command()
 async def add(ctx, tracking, size, *, item):
     #format data and insert into the sheet
-    data = [str(ctx.author), str(ctx.author.id), item, size, tracking, datetime.date.today().strftime("%m/%d/%Y")]
+    data = [str(ctx.author), str(ctx.author.id), item, size, tracking, datetime.date.today().strftime("%m/%d/%Y"), "", "", "", str(uuid.uuid4())]
     client.worksheet.append_row(data)
     client.worksheet.format("C" + str(len(client.worksheet.get_all_values())), red)
 
