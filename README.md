@@ -5,11 +5,12 @@ Discord bot integrated with Google Sheets made for people who have somebody else
 1. Make a copy of this Google Sheet: https://docs.google.com/spreadsheets/d/1tT0zwWYl32oauIu20bPLReQgW_MsG2UHgK80hfpixXM/edit?usp=sharing
 2. Create a new project at https://console.cloud.google.com/apis/dashboard
 3. Enable the Google Sheets API at https://console.cloud.google.com/marketplace/product/google/sheets.googleapis.com
-4. Create service account credentials (make sure it has project editor permissions)
-5. Create your key in JSON format and a file called "credentials.json" should be downloaded
-6. Replace the empty credentials.json in the code folder with your new one you just downloaded
-7. Go inside the credentials.json file and copy the "client_email" value
-8. Share the Google Sheet to that email you copied
+4. Enable the Google Drive API at https://console.cloud.google.com/marketplace/product/google/drive.googleapis.com
+5. Create service account credentials (make sure it has project editor permissions)
+6. Create your key in JSON format and a file called "credentials.json" should be downloaded
+7. Replace the empty credentials.json in the code folder with your new one you just downloaded
+8. Go inside the credentials.json file and copy the "client_email" value
+9. Share the Google Sheet to that email you copied
 
 # Discord Setup
 1. Create a new application at https://discord.com/developers/applications
