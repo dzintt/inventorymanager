@@ -176,19 +176,19 @@ async def sell(ctx, index: int):
             #get item data
             item, size, tracking = database[index]["Item"], database[index]["Size"], database[index]["Incoming Tracking"]
 
-            #save pdf file from discord
-            await ctx.message.attachments[0].save(f"./labels/{ctx.message.attachments[0].filename}")
+            #save pdf file from discord 
+            await ctx.message.attachments[0].save(os.path.join(sys.path[0], f"labels/{ctx.message.attachments[0].filename}"))
 
             #convert pdf to jpg for OCR
-            pdfImages = pdf2image.convert_from_path(f"./labels/{ctx.message.attachments[0].filename}", poppler_path="./poppler-0.68.0/bin")
+            pdfImages = pdf2image.convert_from_path(os.path.join(sys.path[0], f"labels/{ctx.message.attachments[0].filename}"), poppler_path="./poppler-0.68.0/bin")
             allBarcodes = []
 
             #scan all images
             for i in range(len(pdfImages)):
-                pdfImages[i].save(f"./labels/toscan{i}.jpg", "JPEG")
+                pdfImages[i].save(os.path.join(sys.path[0], f"labels/toscan{i}.jpg"), "JPEG")
 
                 #extract the tracking number from the image
-                barcodes = pyzbar.decode(cv2.imread(f"./labels/toscan{i}.jpg"))
+                barcodes = pyzbar.decode(cv2.imread(os.path.join(sys.path[0], f"labels/toscan{i}.jpg")))
                 for barcode in barcodes:
                     allBarcodes.append(barcode.data.decode("utf-8"))
             
@@ -196,8 +196,8 @@ async def sell(ctx, index: int):
             outgoingTrack = max(allBarcodes, key=len)
             
             #clear the folder for reuse later and so it does not take up storage
-            for f in os.listdir("./labels"):
-                os.remove(os.path.join("./labels", f))
+            for f in os.listdir(os.path.join(sys.path[0], "labels")):
+                os.remove(os.path.join(os.path.join(sys.path[0], "labels", f)))
 
             #update sheet with gathered info
             client.worksheet.format("C" + str(index+2), yellow)
