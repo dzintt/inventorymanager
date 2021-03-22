@@ -1,17 +1,17 @@
 from discord.ext import commands
 from discord.utils import get
 from discord import Game
-import discord, gspread, datetime, os, json, cv2, pdf2image, pyzbar
+import discord, gspread, datetime, os, json, cv2, pdf2image, pyzbar, sys
 from pyzbar import pyzbar
 
 #extract variables from setting file
-settings = json.load(open("settings.json"))
+settings = json.load(open(os.path.join(sys.path[0], "settings.json")))
 token, prefix, gsheetKey, logchannel, shipchannel, owners = settings["bot_token"], settings["bot_prefix"], settings["google_sheet_key"], settings["log_channel_id"], settings["shipping_channel_id"], settings["bot_owner_ids"]
 
 #sheet colors
-red = {"backgroundColor": {"red": 1.0,"green": 0.5,"blue": 0.5}}
-green = {"backgroundColor": {"red": 0.67,"green": 1.0,"blue": 0.54}}
-yellow = {"backgroundColor": {"red": 1.0,"green": 0.89,"blue": 0.6}}
+red = {"backgroundColor": {"red": 1.0,"green": 0.5,"blue": 0.5}} #represents active items
+yellow = {"backgroundColor": {"red": 1.0,"green": 0.89,"blue": 0.6}} #represents items pending shipping
+green = {"backgroundColor": {"red": 0.67,"green": 1.0,"blue": 0.54}} #represents completed/shipped items
 
 #initiate the bot client
 client = commands.Bot(command_prefix=prefix)
@@ -29,7 +29,7 @@ async def on_ready():
         print(guild.name)
 
     #connect to google sheets
-    gc = gspread.service_account(filename="credentials.json")
+    gc = gspread.service_account(filename=os.path.join(sys.path[0], "credentials.json"))
     sh = gc.open_by_key(gsheetKey)
 
     #set client variables
