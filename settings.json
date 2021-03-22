@@ -1,0 +1,11 @@
+{
+    "bot_token":"",
+    "bot_prefix":"",
+    "google_sheet_key":"",
+    "log_channel_id": "",
+    "shipping_channel_id": "",
+    "bot_owner_ids": [
+        "",
+        ""
+    ]
+}
