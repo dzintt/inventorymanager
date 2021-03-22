@@ -1,7 +1,7 @@
 from discord.ext import commands
 from discord.utils import get
 from discord import Game
-import discord, gspread, datetime, os, json, cv2, pdf2image, pyzbar, sys, uuid
+import discord, gspread, datetime, os, json, cv2, pdf2image, pyzbar, sys, uuid, tracking_url
 from pyzbar import pyzbar
 
 #extract variables from setting file
@@ -141,7 +141,10 @@ async def inventory(ctx, status):
 
     #display the user's inventory
     if len(userInv) != 0:
-        inventory = "\n".join([f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']}" for i in userInv])
+        if status.lower() == "active":
+            inventory = "\n".join([f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier(str(i['Incoming Tracking'])).url})" if tracking_url.guess_carrier(str(i['Incoming Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier('0' + str(i['Incoming Tracking'])).url})" if tracking_url.guess_carrier('0' + str(i['Incoming Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** N/A" for i in userInv])
+        else:
+            inventory = "\n".join([f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier(str(i['Incoming Tracking'])).url})" if tracking_url.guess_carrier(str(i['Outgoing Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier('0' + str(i['Outgoing Tracking'])).url})" if tracking_url.guess_carrier('0' + str(i['Outgoing Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** N/A" for i in userInv])
         embed = discord.Embed(colour=discord.Colour(0x4ef542), title=f"💰 {ctx.author}'s Inventory ({status.upper()})", description=inventory, timestamp=datetime.datetime.utcnow())
         embed.set_footer(text="Inventory Manager | Made by DZ#0002")
         embed.set_thumbnail(url=ctx.author.avatar_url)
