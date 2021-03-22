@@ -97,37 +97,32 @@ async def add(ctx, tracking, size, *, item):
 
 #command to remove an item from user inventory
 @client.command()
-async def remove(ctx, tracking):
-    found = False
+async def remove(ctx, index: int):
+    #adjust the index to be more code friendly by subtracting 1
+    index -= 1
 
     #fetch sheet data
     database = client.worksheet.get_all_records()
 
-    #iterate through the sheet to find the item the user wants to remove
-    for i in range(len(database)):
-        #check if the tracking number exists and if the user who ran the command owns this item
-        if database[i]["Incoming Tracking"] == tracking and database[i]["Discord ID"] == ctx.author.id:
-            found = True
+    #fetch user's active inventory
+    userInv = [a for a in database if a["Discord ID"] == ctx.author.id and a["Shipping Label"] == ""]
+    removeItem = userInv[index]
 
-            #get the data of the item they want to remove
-            item, size = database[i]["Item"], database[i]["Size"]
+    #find location of item inside the sheet
+    index = database.index(removeItem)
 
-            #remove their item from the sheet
-            client.worksheet.delete_rows(i+2)
+    #get item data
+    item, size, tracking = database[index]["Item"], database[index]["Size"], database[index]["Incoming Tracking"]
 
-            #channel message
-            embed = discord.Embed(colour=discord.Colour(0x4ef542), title=f"✅ Successfully Removed", timestamp=datetime.datetime.utcnow())
-            embed.set_footer(text="Inventory Manager | Made by DZ#0002")
-            embed.add_field(name="Item:", value=f"{item} ({size})")
-            embed.add_field(name="Tracking:", value=tracking, inline=False)
-            message = await ctx.send(embed=embed)
-            break
-    
-    #let the user know that the item does not exist in the sheet
-    if found == False:
-        embed = discord.Embed(colour=discord.Colour(0xf71111), title=f"❌ Tracking Number Does Not Exist", timestamp=datetime.datetime.utcnow())
-        embed.set_footer(text="Inventory Manager | Made by DZ#0002")
-        await ctx.send(embed=embed)
+    #delete item
+    client.worksheet.delete_rows(index+2)
+
+    #channel message
+    embed = discord.Embed(colour=discord.Colour(0x4ef542), title=f"✅ Successfully Removed", timestamp=datetime.datetime.utcnow())
+    embed.set_footer(text="Inventory Manager | Made by DZ#0002")
+    embed.add_field(name="Item:", value=f"{item} ({size})")
+    embed.add_field(name="Tracking:", value=tracking, inline=False)
+    await ctx.send(embed=embed)
 
 @client.command()
 async def inventory(ctx, status):
@@ -150,12 +145,12 @@ async def inventory(ctx, status):
         embed = discord.Embed(colour=discord.Colour(0x4ef542), title=f"💰 {ctx.author}'s Inventory ({status.upper()})", description=inventory, timestamp=datetime.datetime.utcnow())
         embed.set_footer(text="Inventory Manager | Made by DZ#0002")
         embed.set_thumbnail(url=ctx.author.avatar_url)
-        message = await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
     else:
         embed = discord.Embed(colour=discord.Colour(0x4ef542), title=f"💰 {ctx.author}'s Inventory ({status.upper()})", description="None", timestamp=datetime.datetime.utcnow())
         embed.set_footer(text="Inventory Manager | Made by DZ#0002")
         embed.set_thumbnail(url=ctx.author.avatar_url)
-        message = await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
 
 @client.command()
 async def sell(ctx, index: int):
