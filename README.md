@@ -1,6 +1,12 @@
 # Inventory Manager
 Discord bot integrated with Google Sheets made for people who have somebody else managing their shoe inventory to keep everything nice and organized!
 
+# Info
+**GOOGLE SHEET COLOR CODE MEANINGS**
+RED - Current Inventory
+YELLOW - Pending Shipment
+GREEN - Completed/Shipped Out
+
 # Google Sheets Setup
 1. Make a copy of this Google Sheet: https://docs.google.com/spreadsheets/d/1tT0zwWYl32oauIu20bPLReQgW_MsG2UHgK80hfpixXM/edit?usp=sharing
 2. Create a new project at https://console.cloud.google.com/apis/dashboard
