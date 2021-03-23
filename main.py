@@ -1,7 +1,7 @@
 from discord.ext import commands
 from discord.utils import get
 from discord import Game
-import discord, gspread, datetime, os, json, cv2, pdf2image, pyzbar, sys, uuid, tracking_url
+import discord, gspread, datetime, os, json, cv2, pdf2image, pyzbar, sys, uuid, tracking_url, pprint
 from pyzbar import pyzbar
 
 #extract variables from setting file
@@ -124,6 +124,7 @@ async def remove(ctx, index: int):
     embed.add_field(name="Tracking:", value=tracking, inline=False)
     await ctx.send(embed=embed)
 
+#command to check your inventory
 @client.command()
 async def inventory(ctx, status):
     #fetch sheet data
@@ -140,21 +141,36 @@ async def inventory(ctx, status):
         raise Exception("Invalid Section")
 
     #display the user's inventory
+
     if len(userInv) != 0:
         if status.lower() == "active":
-            inventory = "\n".join([f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier(str(i['Incoming Tracking'])).url})" if tracking_url.guess_carrier(str(i['Incoming Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier('0' + str(i['Incoming Tracking'])).url})" if tracking_url.guess_carrier('0' + str(i['Incoming Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** N/A" for i in userInv])
+            inventory = [f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier(str(i['Incoming Tracking'])).url})" if tracking_url.guess_carrier(str(i['Incoming Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier('0' + str(i['Incoming Tracking'])).url})" if tracking_url.guess_carrier('0' + str(i['Incoming Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** N/A" for i in userInv]
         else:
-            inventory = "\n".join([f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier(str(i['Incoming Tracking'])).url})" if tracking_url.guess_carrier(str(i['Outgoing Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier('0' + str(i['Outgoing Tracking'])).url})" if tracking_url.guess_carrier('0' + str(i['Outgoing Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** N/A" for i in userInv])
-        embed = discord.Embed(colour=discord.Colour(0x4ef542), title=f"💰 {ctx.author}'s Inventory ({status.upper()})", description=inventory, timestamp=datetime.datetime.utcnow())
+            inventory = [f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier(str(i['Incoming Tracking'])).url})" if tracking_url.guess_carrier(str(i['Outgoing Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier('0' + str(i['Outgoing Tracking'])).url})" if tracking_url.guess_carrier('0' + str(i['Outgoing Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** N/A" for i in userInv]
+        
+        #break down the inventory into groups of 25 to avoid going over discord message limit
+        inventory = [inventory[i * 25:(i + 1) * 25] for i in range((len(inventory) + 25 - 1) // 25 )] 
+
+        embed = discord.Embed(colour=discord.Colour(0x4ef542), title=f"💰 {ctx.author}'s Inventory ({status.upper()})", timestamp=datetime.datetime.utcnow())
         embed.set_footer(text="Inventory Manager | Made by DZ#0002")
         embed.set_thumbnail(url=ctx.author.avatar_url)
+        embed.description = "\n".join(inventory[0])
         await ctx.send(embed=embed)
+
+        #send multiple embeds to bpypass the discord message character limit if the inventory is too big
+        if len(inventory) > 1:
+            embed.title = ""
+            embed.set_thumbnail(url="")
+            for i in range(1, len(inventory)):
+                embed.description = "\n".join(inventory[i])
+                await ctx.send(embed=embed)
     else:
         embed = discord.Embed(colour=discord.Colour(0x4ef542), title=f"💰 {ctx.author}'s Inventory ({status.upper()})", description="None", timestamp=datetime.datetime.utcnow())
         embed.set_footer(text="Inventory Manager | Made by DZ#0002")
         embed.set_thumbnail(url=ctx.author.avatar_url)
         await ctx.send(embed=embed)
 
+#command to mark an item as sold and pending for shipment
 @client.command()
 async def sell(ctx, index: int):
     #check if the command contains an .pdf file attachment
@@ -233,6 +249,7 @@ async def sell(ctx, index: int):
         embed.set_footer(text="Inventory Manager | Made by DZ#0002")
         await ctx.send(embed=embed)
 
+#command to unmark your item as sold and pending for shipment
 @client.command()
 async def unsell(ctx, index: int):
     #adjust the index to be more code friendly by subtracting 1
@@ -275,6 +292,7 @@ async def unsell(ctx, index: int):
 
 #owner commands
 
+#command to list out items that still need to be shipped
 @client.command()
 async def toship(ctx):
     #check if the user is a owner
