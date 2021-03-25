@@ -4,6 +4,7 @@
     "google_sheet_key":"",
     "log_channel_id": "",
     "shipping_channel_id": "",
+    "received_channel_id": "",
     "bot_owner_ids": [
         "",
         ""

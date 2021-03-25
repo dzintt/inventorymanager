@@ -6,13 +6,13 @@ from pyzbar import pyzbar
 
 #extract variables from setting file
 settings = json.load(open(os.path.join(sys.path[0], "settings.json")))
-token, prefix, gsheetKey, logchannel, shipchannel, owners = settings["bot_token"], settings["bot_prefix"], settings["google_sheet_key"], settings["log_channel_id"], settings["shipping_channel_id"], settings["bot_owner_ids"]
+token, prefix, gsheetKey, logchannel, shipchannel, receivedchannel, owners = settings["bot_token"], settings["bot_prefix"], settings["google_sheet_key"], settings["log_channel_id"], settings["shipping_channel_id"], settings["received_channel_id"], settings["bot_owner_ids"]
 
 #sheet colors
-red = {"backgroundColor": {"red": 1.0,"green": 0.5,"blue": 0.5}} #represents active items
-yellow = {"backgroundColor": {"red": 1.0,"green": 0.89,"blue": 0.6}} #represents items pending shipping
+red = {"backgroundColor": {"red": 1.0,"green": 0.5,"blue": 0.5}} #represents items awaiting delivery
+orange = {"backgroundColor": {"red": 1.0,"green": 0.5,"blue": 0.5}} #represents package received by reshipper
+yellow = {"backgroundColor": {"red": 0.96,"green": 0.7,"blue": 0.42}} #represents items pending shipping
 green = {"backgroundColor": {"red": 0.67,"green": 1.0,"blue": 0.54}} #represents completed/shipped items
-
 #initiate the bot client
 client = commands.Bot(command_prefix=prefix)
 
@@ -36,6 +36,7 @@ async def on_ready():
     client.worksheet = sh.sheet1
     client.log = client.get_channel(int(logchannel))
     client.shipChannelID = int(shipchannel)
+    client.receivedChannelID = int(receivedchannel)
     client.owners = owners
 
 #using on_message instead of a comamnd for ease of use when using a barcode scanner. shipper can scan into the channel and bot will automatically process it
@@ -76,6 +77,36 @@ async def on_message(message):
         else:
             #let the user know that their tracking number is invalid
             embed = discord.Embed(colour=discord.Colour(0xf71111), title=f"❌ Tracking Number Does Not Exist Or Is Not Pending Shipment", timestamp=datetime.datetime.utcnow())
+            embed.set_footer(text="Inventory Manager | Made by DZ#0002")
+            await message.channel.send(embed=embed) 
+
+    if message.channel.id == client.receivedChannelID and str(message.author.id) in client.owners:
+        database = client.worksheet.get_all_records()
+
+        #check if the trakcing number exists
+        inTrackingList = [str(a["Incoming Tracking"]) for a in database if a["Shipping Label"] == ""]
+        if message.content in inTrackingList:
+            index = inTrackingList.index(message.content)
+
+            #get item data
+            user, item, size, tracking = client.get_user(int(database[index]["Discord ID"])), database[index]["Item"], database[index]["Size"], database[index]["Incoming Tracking"]
+
+            #update sheet
+            client.worksheet.format("C" + str(index+2), orange)
+
+            #channel message
+            embed = discord.Embed(colour=discord.Colour(0x4ef542), title=f"📬 Item Marked Received", timestamp=datetime.datetime.utcnow())
+            embed.add_field(name="Item:", value=f"{item} ({size})")
+            embed.add_field(name="Incoming Tracking:", value=tracking, inline=False)
+            embed.set_footer(text="Inventory Manager | Made by DZ#0002")
+            await message.channel.send(embed=embed)
+
+            #notifys the user through DM that their item has been shipped
+            embed.title = "📬 Your Item Has Been Delivered"
+            await user.send(embed=embed)
+        else:
+            #let the user know that their tracking number is invalid
+            embed = discord.Embed(colour=discord.Colour(0xf71111), title=f"❌ Tracking Number Does Not Exist Or Is Not Pending Delivery", timestamp=datetime.datetime.utcnow())
             embed.set_footer(text="Inventory Manager | Made by DZ#0002")
             await message.channel.send(embed=embed) 
 
@@ -144,9 +175,9 @@ async def inventory(ctx, status):
 
     if len(userInv) != 0:
         if status.lower() == "active":
-            inventory = [f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier(str(i['Incoming Tracking'])).url})" if tracking_url.guess_carrier(str(i['Incoming Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier('0' + str(i['Incoming Tracking'])).url})" if tracking_url.guess_carrier('0' + str(i['Incoming Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** N/A" for i in userInv]
+            inventory = [f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier(str(i['Incoming Tracking'])).url})" if tracking_url.guess_carrier(str(i['Incoming Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier('0' + str(i['Incoming Tracking'])).url})" if tracking_url.guess_carrier('0' + str(i['Incoming Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier(str(i['Incoming Tracking'])[8:]).url})" if tracking_url.guess_carrier(str(i['Incoming Tracking'])[8:]) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** N/A" for i in userInv]
         else:
-            inventory = [f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier(str(i['Incoming Tracking'])).url})" if tracking_url.guess_carrier(str(i['Outgoing Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier('0' + str(i['Outgoing Tracking'])).url})" if tracking_url.guess_carrier('0' + str(i['Outgoing Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** N/A" for i in userInv]
+            inventory = [f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier(str(i['Incoming Tracking'])).url})" if tracking_url.guess_carrier(str(i['Outgoing Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier('0' + str(i['Outgoing Tracking'])).url})" if tracking_url.guess_carrier('0' + str(i['Outgoing Tracking'])) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** [TRACK]({tracking_url.guess_carrier(str(i['Outgoing Tracking'])[8:]).url})" if tracking_url.guess_carrier(str(i['Outgoing Tracking'])[8:]) is not None else f"**{userInv.index(i)+1}.** {i['Item']} ({i['Size']}) **|** {i['Delivery Date']} **|** N/A" for i in userInv]
         
         #break down the inventory into groups of 25 to avoid going over discord message limit
         inventory = [inventory[i * 25:(i + 1) * 25] for i in range((len(inventory) + 25 - 1) // 25 )] 
